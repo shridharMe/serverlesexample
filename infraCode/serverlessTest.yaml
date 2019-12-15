@@ -1,0 +1,125 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Description: "Interest calculator"
+Resources:
+  InterestCalculatorLambda:
+      Type: AWS::Lambda::Function
+      Properties: 
+        Code: 
+          S3Bucket: dprlambdacode
+          S3Key: lambdaCode.zip
+        Description: "Interest Calculator"
+        FunctionName: "interestCalculator"
+        Handler: index.handler
+        Role: !GetAtt LambdaExecutionRole.Arn
+        Runtime: nodejs12.x
+
+  LambdaExecutionRole:
+      Type: AWS::IAM::Role
+      Properties:
+          AssumeRolePolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Effect: Allow
+              Principal:
+                Service:
+                - lambda.amazonaws.com
+              Action:
+              - sts:AssumeRole
+          Path: "/"
+          Policies:
+          - PolicyName: 'lambdaPolicy'
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+              - Effect: Allow
+                Action: [ 'dynamodb:DescribeStream',
+                          'dynamodb:Scan',
+                          'dynamodb:GetRecords',
+                          'dynamodb:GetShardIterator',
+                          'dynamodb:ListStreams',
+                          'logs:CreateLogGroup',
+                          'logs:CreateLogStream',
+                          'logs:PutLogEvents'
+                        ]
+                Resource: 
+                  Fn::ImportValue: InterestBandTableArn
+              - Effect: Allow
+                Action: [ 's3:GetObject',
+                          's3:ListBucket'
+                        ]
+                Resource: 
+                  Fn::ImportValue: LambdaS3BucketArn
+
+  RestApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: interestCalculator
+
+  APILambdaPermission:
+    Type: "AWS::Lambda::Permission"
+    Properties:
+      Action: "lambda:InvokeFunction"
+      FunctionName: !GetAtt 
+        - InterestCalculatorLambda
+        - Arn
+      Principal: 'apigateway.amazonaws.com'
+
+
+  ApiDeployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn:
+      - ApiMethod
+    Properties: 
+      RestApiId: !Ref RestApi
+      StageName: dit
+
+  RequestValidator:
+    Type: AWS::ApiGateway::RequestValidator
+    Properties: 
+      RestApiId: !Ref RestApi
+      ValidateRequestBody: true
+      ValidateRequestParameters: true
+
+  ApiMethod:
+      Type: AWS::ApiGateway::Method
+      Properties:
+        HttpMethod: GET
+        ResourceId: !GetAtt RestApi.RootResourceId
+        RestApiId: !Ref RestApi
+        AuthorizationType: NONE
+        Integration:
+            IntegrationHttpMethod: POST
+            IntegrationResponses:
+              - StatusCode: 200
+            RequestTemplates: 
+              "application/json": "{\n \"query\": {\n #foreach($queryParam in $input.params().querystring.keySet()) \n \"$queryParam\": \"$util.escapeJavaScript($input.params().querystring.get($queryParam))\" #if($foreach.hasNext),#end \n #end}}"
+            Type: AWS
+            Uri: !Sub >-
+              arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${InterestCalculatorLambda.Arn}/invocations
+        RequestParameters:
+          method.request.querystring.amount: true
+        RequestValidatorId: !Ref RequestValidator
+        MethodResponses:
+          - StatusCode: 200
+            ResponseModels: { "application/json": "Empty" }
+ 
+Outputs:
+
+  InterestCalculatorLambdaARN:
+    Description: Lambda function ARN
+    Value: !GetAtt InterestCalculatorLambda.Arn  
+    Export:
+      Name: InterestCalculatorLambdaArn
+  RestAPI:
+    Description: Lambda function ARN
+    Value:       
+      Fn::Join:
+        - ""
+        - - "https://"
+          - Ref: "RestApi"
+          - ".execute-api."
+          - Ref: AWS::Region
+          - ".amazonaws.com/dit?amount="
+    Export:
+      Name: RestAPIurl

@@ -1,0 +1,76 @@
+{
+    "InterestBand": [
+        {
+            "PutRequest": {
+                "Item": {
+                    "id": {
+                        "N": "1"
+                    },
+                    "minAmt": {
+                        "N": "1"
+                    },
+                    "maxAmt": {
+                        "N": "999"
+                    },
+                    "interest": {
+                        "N": "1"
+                    }
+                }
+            }
+        },
+		{
+            "PutRequest": {
+                "Item": {
+                    "id": {
+                        "N": "2"
+                    },
+                    "minAmt": {
+                        "N": "1000"
+                    },
+                    "maxAmt": {
+                        "N": "4999"
+                    },
+                    "interest": {
+                        "N": "1.5"
+                    }
+                }
+            }
+        },
+		{
+            "PutRequest": {
+                "Item": {
+                    "id": {
+                        "N": "3"
+                    },
+                    "minAmt": {
+                        "N": "5000"
+                    },
+                    "maxAmt": {
+                        "N": "9999"
+                    },
+                    "interest": {
+                        "N": "2"
+                    }
+                }
+            }
+        },
+		{
+            "PutRequest": {
+                "Item": {
+                    "id": {
+                        "N": "4"
+                    },
+                    "minAmt": {
+                        "N": "10000"
+                    },
+                    "maxAmt": {
+                        "N": "49999"
+                    },
+                    "interest": {
+                        "N": "2.5"
+                    }
+                }
+            }
+        }
+    ]
+}

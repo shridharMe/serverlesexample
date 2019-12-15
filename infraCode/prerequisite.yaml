@@ -1,0 +1,48 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Interest calculator"
+Resources:
+  LambdaS3Bucket:
+    Type: AWS::S3::Bucket
+    Properties: 
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      BucketName: dprlambdacode
+      PublicAccessBlockConfiguration: 
+          BlockPublicAcls: true
+          BlockPublicPolicy: true
+          IgnorePublicAcls: true
+          RestrictPublicBuckets: true
+
+  InterestBandTable:
+      Type: AWS::DynamoDB::Table
+      Properties: 
+        AttributeDefinitions: 
+          - 
+            AttributeName: id
+            AttributeType: N
+        KeySchema: 
+          - 
+            AttributeName: id
+            KeyType: HASH
+ 
+        ProvisionedThroughput: 
+            ReadCapacityUnits: 5
+            WriteCapacityUnits: 5
+        SSESpecification: 
+          SSEEnabled: true
+        TableName: InterestBand
+Outputs:
+
+  S3BucketARN:
+    Description: S3 Bucket ARN
+    Value: !GetAtt LambdaS3Bucket.Arn  
+    Export:
+      Name: LambdaS3BucketArn
+
+  DynamodbARN:
+    Description:  Dynamodb Bucket ARN
+    Value: !GetAtt InterestBandTable.Arn 
+    Export:
+      Name: InterestBandTableArn
